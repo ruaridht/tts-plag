@@ -17,18 +17,19 @@ import string
 
 SPEECH_DIR = "0786036/"
 
-class Preprocess(object):
+class Adler32(object):
   def __init__(self):
     amItrue = True
-    
-  def process():
-    print ">>> Preprocessed (all files)"
+  
+  def checksum(self):
+    print ">>> Calculated Alder32 checksum"
 
 class Documents(object):
   def __init__(self):
-    self.docs     = []
-    self.docNames = [] # Store the corresponding document name
-    self.docWords = [] # Store each document as a list of words
+    self.docs       = [] # Speeches with no punctuation or description at top
+    self.docNames   = [] # Store the corresponding document name
+    self.docsWords  = [] # Store each document as a list of words
+    self.docsNoStop = [] # Speeches with stopwords removed
     
   def _openDocuments(self):
     fileList = os.listdir(SPEECH_DIR)
@@ -41,29 +42,35 @@ class Documents(object):
   
   def _removeInitialSentence(self):
     d = []
+    regex = re.compile('[%s]' % re.escape(string.punctuation)) # Use this to strip punctuation2
+    
     for doc in self.docs:
-      stringValue = ''
+      speech = ''
       for sentence in doc[1:]:
-        stringValue += sentence
-      d.append(stringValue)
+        speech += regex.sub('',sentence) # Remove the punctuation
+      d.append(speech)
     self.docs = d
     
   def _buildDocWords(self):
+    stopwords = ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', 'her', 'hers', 'herself', 'it', 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this', 'that', 'these', 'those', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don', 'should', 'now']
+    
     for doc in self.docs:
-      self.docWords.append(string.split(doc))
+      words = string.split(doc)
+      wordStopped = [w.lower() for w in words if w not in stopwords] # Remove the stopwords and convert to lowercase
+      self.docsWords.append(words)
+      self.docsNoStop.append(wordStopped)
     
-  def retrieveDocs(self):
+  def processDocs(self):
     self._openDocuments()
-    self._removeInitialSentence() # Kind of preprocessing, but specific to the task.
-    self._buildDocWords()
-    
-    print self.docWords[0]
-    print len(self.docWords)
-    print self.docNames[0]
+    self._removeInitialSentence() # Removes the initial sentence and any punctuation
+    self._buildDocWords() # Represents each speech as a list of words and removes stopwords
 
 def main():
   docs = Documents()
-  docs.retrieveDocs()
+  docs.processDocs()
+  
+  ad = Adler32()
+  ad.checksum()
   
   print ">>> Goodbye."
 
