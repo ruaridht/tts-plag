@@ -1,0 +1,44 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1138\cocoasubrtf230
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww12140\viewh8400\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\qc
+
+\f0\fs24 \cf0 Text Technologies - Practical 3 - Plagiarism detection\
+Ruaridh Thomson - s0786036\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural
+\cf0 \
+
+\b Libraries & Reference\
+
+\b0 hashlib 	-	python library for computing checksums (md5 is deprecated)\
+re		-	regular expression for string manipulation\
+string	-	also for string manipulation\
+math\
+\
+[1] {\field{\*\fldinst{HYPERLINK "http://d3s.mff.cuni.cz/~holub/sw/shash/"}}{\fldrslt http://d3s.mff.cuni.cz/~holub/sw/shash/}}				-	reference for simhash\
+[2] {\field{\*\fldinst{HYPERLINK "http://bibliographie-trac.ub.rub.de/browser/simhash.py"}}{\fldrslt http://bibliographie-trac.ub.rub.de/browser/simhash.py}}	-	further simhash help\
+\
+
+\b Preprocessing\
+
+\b0 Initially the top line, explaining who gave the speech, is removed so that only the speech contents remain.  Furthermore all punctuation is removed and each speech is stored as a string in a list.  A separate list further contains each speech as a list of words (the tokens of the speech) that have been converted to lowercase.  Going a step further, another list contains each speech in token form with all stopwords ('the', 'them', 'a', 'at' etc.) removed.\
+\
+
+\b Comparison\
+
+\b0 Exact duplicates can be found by comparing the string representation of each speech, however this is slow with order O(n^2).\
+\
+Initially I tried using md5 to compute the fingerprint for each speech.  Though with trouble I was unsuccessful.  Following from [1] and [2] I have been able to incorporate simhash into the plagiarism detector and find near-duplicates with a similarity greater than a given threshold, 99% in this case.  Without stopwords the fingerprint of near-duplicates should be almost, if not completely, identical.\
+\
+Lowering the threshold gives higher recall with lower precision.\
+\
+The exact duplicates are also found alongside the near-duplicates and therefore I only write the near-duplicates to file (duplicates.txt).\
+\
+
+\b Duplicates\
+
+\b0 Taking a look at a pair of very near duplicates, 270897-9347200, we can see simple wording changes, e.g.:\
+As I have said previously, it is important to give a certain flexibility to the Member States.\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\qj
+\cf0 As I have said previously, it is important to give a certain flexibility of this proposal to the Member States.}

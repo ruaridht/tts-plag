@@ -6,7 +6,7 @@ A simple plagiarism detector
 Ruaridh Thomson
 s0786036
 
-Practical 2 for Text Technologies
+Practical 3 for Text Technologies
 """
 
 import re
@@ -16,51 +16,24 @@ import string
 
 #import md5
 import hashlib
-from zlib import adler32
-from zlib import crc32
+#from zlib import adler32
+#from zlib import crc32
 
-SPEECH_DIR = "train/" #"0786036/"
-HASH_BITS = 64
-
-def simhash(tokens, hashbits=HASH_BITS):
-  if hashbits > 64: hashbits = 64
-  v = [0]*hashbits
-
-  for t in [x.__hash__() for x in tokens]:
-    bitmask = 0
-    for i in xrange(hashbits):
-      bitmask = 1 << i
-      if t & bitmask:
-        v[i] += 1
-      else:
-        v[i] -= 1
-
-  fingerprint = 0
-  for i in xrange(hashbits):
-    if v[i] >= 0:
-      fingerprint += 1 << i
-
-  return fingerprint
-
-def similarity(a, b, hashbits=HASH_BITS):
-  # Use Hamming Distance to return % of similar bits
-  x = (a ^ b) & ((1 << hashbits) - 1)
-  tot = 0
-  while x:
-    tot += 1
-    x &= x-1
-  return float(hashbits-tot)/hashbits
+SPEECH_DIR     = "0786036/" #"train/"
+HASH_BITS      = 64
+DUPE_THRESHOLD = 0.90
 
 class Documents(object):
   def __init__(self):
     self.docs       = [] # Speeches with no punctuation or description at top
     self.docNames   = [] # Store the corresponding document name
-    self.docsWords  = [] # Store each document as a list of words
+    self.docsWords  = [] # Store each document as a list of words (lowercase)
     self.docsNoStop = [] # Speeches with stopwords removed
     self.directCopy = [] # list of speeches that are exact duplicates
     self.checksums  = [] # list of corresponding checksums
     self.checkCopy  = [] # list of speeches with the same md5
     self.simhashes  = [] # list of simhashes for each speech
+    self.nearDupes  = [] # list of near-duplicates found through simhash
     
   def _openDocuments(self):
     fileList = os.listdir(SPEECH_DIR)
@@ -113,6 +86,7 @@ class Documents(object):
         secondIndex += 1
       firstIndex += 1
     print self.directCopy
+    print ">>> Exact duplicates found: ", len(self.directCopy)
     print ">>> Done direct check"
     
   def checksum(self):
@@ -133,64 +107,67 @@ class Documents(object):
             dupesReverse = self.docNames[secondIndex] + '-' + self.docNames[firstIndex]
             if (dupesReverse not in self.checkCopy):
               self.checkCopy.append(self.docNames[firstIndex] + '-' + self.docNames[secondIndex])
-              print self.docNames[firstIndex], '-', self.docNames[secondIndex]
         secondIndex += 1
       firstIndex += 1
-    print self.checkCopy
+    print ">>> Exact duplicates found via MD5: ", len(self.checkCopy)
     print ">>> Done checksum"
     
-  def simhash(tokens, hashbits=8):
-    if hashbits > 64: hashbits = 64
-    v = [0]*hashbits
+  def simhash(self, tokens):
+    v = [0]*HASH_BITS
   
     for t in [x.__hash__() for x in tokens]:
       bitmask = 0
-      for i in xrange(hashbits):
+      for i in range(HASH_BITS):
         bitmask = 1 << i
         if t & bitmask:
           v[i] += 1
         else:
           v[i] -= 1
-  
+    
     fingerprint = 0
-    for i in xrange(hashbits):
+    for i in range(HASH_BITS):
       if v[i] >= 0:
         fingerprint += 1 << i
-
     return fingerprint
   
-  def similarity(a, b, hashbits=32):
-    # Use Hamming Distance to return % of similar bits
-    x = (a ^ b) & ((1 << hashbits) - 1)
+  def similarity(self, a, b):
+    x = (a ^ b) & ((1 << HASH_BITS) - 1)
     tot = 0
     while x:
       tot += 1
       x &= x-1
-    return float(hashbits-tot)/hashbits
+    return float(HASH_BITS-tot)/HASH_BITS
   
   def sim(self):
     simDupes = []
-    for doc in self.docsWords:
-      h = simhash(doc)
+    for doc in self.docsNoStop:
+      h = self.simhash(doc)
       self.simhashes.append(h)
     
     f = 0
     for h1 in self.simhashes:
       s = 0
       for h2 in self.simhashes:
-        a = similarity(h1,h2)
-        if a==1:
+        a = self.similarity(h1,h2)
+        if a>DUPE_THRESHOLD:
           if (self.docNames[f] != self.docNames[s]):
             dupesReverse = self.docNames[s] + '-' + self.docNames[f]
             if (dupesReverse not in simDupes):
-              #print "%s-%s : %.2f%%" % ( self.docNames[f], self.docNames[s], a*100 )
               simDupes.append(self.docNames[f] + '-' + self.docNames[s])
         s += 1
       f += 1
       
-    print simDupes
-    print "Num dupes: ", len(simDupes)
+    self.nearDupes = simDupes
+    print ">>> Near-duplicates found: ", len(simDupes)
     print ">>> Done simhash"
+    
+  def writeOut(self):
+    f = open('duplicates.txt','w')
+    for dupe in self.nearDupes:
+      f.write(dupe + "\n")
+    f.close()
+    print ">>> Duplicates written to: duplicates.txt"
+    
 
 def main():
   print ">>> Begin plagiarism detection."
@@ -199,6 +176,7 @@ def main():
   docs.directCheck() # We can either directly check
   #docs.checksum()
   docs.sim()
+  docs.writeOut()
   
   print ">>> Goodbye."
 
